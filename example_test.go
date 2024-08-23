@@ -46,7 +46,7 @@ func ExampleActiveMQ_Produce() {
 	// ... initialize ActiveMQ
 	// activemq.WithConnectionType(activemq.ConnectionTypeProducer)
 
-	if err := amqProducer.Produce(ctx, &MyMessage{Text: "send it!"}, activemq.WithRetryPolicy(10, time.Second*5)); err != nil {
+	if err := amqProducer.Produce(ctx, &MyMessage{Text: "send it!"}, activemq.WithRetryPolicy(10, time.Second*5, time.Second*5)); err != nil {
 		panic(err)
 	}
 }
