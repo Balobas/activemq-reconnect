@@ -66,22 +66,25 @@ type produceOptions struct {
 
 // ProduceOption :: RetryPolicy
 
-func WithRetryPolicy(maxTries int, tryDelay time.Duration) ProduceOption {
+func WithRetryPolicy(maxTries int, tryDelay time.Duration, periodRetry time.Duration) ProduceOption {
 	return retryPolicy{
-		maxTries: maxTries,
-		tryDelay: tryDelay,
+		maxTries:    maxTries,
+		tryDelay:    tryDelay,
+		periodRetry: periodRetry,
 	}
 }
 
 type retryPolicy struct {
-	maxTries int
-	tryDelay time.Duration
+	maxTries    int
+	tryDelay    time.Duration
+	periodRetry time.Duration
 }
 
 func (v retryPolicy) MarshalText() ([]byte, error) {
-	var buf [16]byte
+	var buf [24]byte
 	binary.LittleEndian.PutUint64(buf[0:8], uint64(v.maxTries))
 	binary.LittleEndian.PutUint64(buf[8:16], uint64(v.tryDelay))
+	binary.LittleEndian.PutUint64(buf[16:24], uint64(v.periodRetry))
 	return []byte(base64.StdEncoding.EncodeToString(buf[:])), nil
 }
 
@@ -90,12 +93,13 @@ func (v *retryPolicy) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(bts) != 16 {
+	if len(bts) != 24 {
 		return fmt.Errorf("incorrect length %d", len(bts))
 	}
 	*v = retryPolicy{
-		maxTries: int(binary.LittleEndian.Uint64(bts[0:8])),
-		tryDelay: time.Duration(binary.LittleEndian.Uint64(bts[8:16])),
+		maxTries:    int(binary.LittleEndian.Uint64(bts[0:8])),
+		tryDelay:    time.Duration(binary.LittleEndian.Uint64(bts[8:16])),
+		periodRetry: time.Duration(binary.LittleEndian.Uint64(bts[16:24])),
 	}
 	return nil
 }

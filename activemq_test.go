@@ -286,7 +286,7 @@ func TestRetries(t *testing.T) {
 	}
 
 	want := newRandomTestMessage()
-	wantMaxTries, wantTryDelay := 3, time.Millisecond*500
+	wantMaxTries, wantTryDelay, wantRetryPeriod := 3, time.Millisecond*500, time.Millisecond*600
 
 	const wantHeaderKey, wantHeaderValue = "key", "value"
 
@@ -311,7 +311,7 @@ func TestRetries(t *testing.T) {
 
 	// send a message
 	if err := producer.Produce(ctx, want,
-		WithRetryPolicy(wantMaxTries, wantTryDelay),
+		WithRetryPolicy(wantMaxTries, wantTryDelay, wantRetryPeriod),
 		WithHeader(wantHeaderKey, wantHeaderValue),
 	); err != nil {
 		t.Fatal(err)
@@ -320,6 +320,7 @@ func TestRetries(t *testing.T) {
 	wg.Wait()
 	assert.LessOrEqual(t, wantTryDelay*time.Duration(wantMaxTries), time.Since(startTime))
 	assert.GreaterOrEqual(t, wantTryDelay*time.Duration(wantMaxTries)*3, time.Since(startTime))
+
 
 	<-time.NewTimer(time.Second).C
 	assert.Equal(t, wantMaxTries, int(atomic.LoadInt32(gotMessages))-1)

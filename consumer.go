@@ -122,10 +122,11 @@ func (amq *ActiveMQ) Consume(ctx context.Context, messageNil ConsumeMessage, exe
 }
 
 const (
-	userDefinedPrefix       = "##"
-	packagePrefix           = "#"
-	retryNoHeader           = packagePrefix + "retry_no"
-	amqScheduledDelayHeader = "AMQ_SCHEDULED_DELAY"
+	userDefinedPrefix        = "##"
+	packagePrefix            = "#"
+	retryNoHeader            = packagePrefix + "retry_no"
+	amqScheduledDelayHeader  = "AMQ_SCHEDULED_DELAY"
+	amqScheduledPeriodHeader = "AMQ_SCHEDULED_PERIOD"
 )
 
 func (amq *ActiveMQ) retryMessage(ctx context.Context, stompMessage *stomp.Message, message ConsumeMessage, udHeaders Headers) bool {
@@ -159,13 +160,15 @@ func (amq *ActiveMQ) retryMessage(ctx context.Context, stompMessage *stomp.Messa
 	for key, value := range udHeaders {
 		sendOpts = append(sendOpts, stomp.SendOpt.Header(userDefinedPrefix+key, value))
 	}
+
 	sendOpts = append(sendOpts, stomp.SendOpt.Header(retryNoHeader, strconv.Itoa(retryNo)))
 	sendOpts = append(sendOpts, stomp.SendOpt.Header(amqScheduledDelayHeader, strconv.FormatInt(rp.tryDelay.Milliseconds(), 10)))
+	sendOpts = append(sendOpts, stomp.SendOpt.Header(amqScheduledPeriodHeader, strconv.FormatInt(rp.periodRetry.Microseconds(), 10)))
 	if err := amq.send(ctx, stompMessage.Destination, stompMessage.ContentType, stompMessage.Body, sendOpts...); err != nil {
 		amq.log.Errorf("failed to resend message %q", stompMessage.Destination)
 		return false
 	}
-	amq.log.Debugf("message %q retried %d/%d for %s", stompMessage.Destination, retryNo, rp.maxTries, rp.tryDelay.String())
+	amq.log.Debugf("message %q retried %d/%d for %s", stompMessage.Destination, retryNo, rp.maxTries, rp.periodRetry.String())
 
 	return true
 }
