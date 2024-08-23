@@ -63,7 +63,8 @@ func (amq *ActiveMQ) Consume(ctx context.Context, messageNil ConsumeMessage, exe
 		}
 		sub, ok := amq.getSubscription(queueName)
 		if !ok {
-			return fmt.Errorf("subscription %q not found", queueName)
+			amq.log.Warnf("subscription %q not found", queueName)
+			continue
 		}
 		timerRefresh := time.NewTimer(time.Second * 5)
 		select {
